@@ -29,10 +29,10 @@ $database = getenv('DB_DATABASE') ?: 'sik9';
 
 // Konfigurasi database kedua
 //$server2   = getenv('DB_SERVER2') ?: '192.168.1.4';
-//$server2   = getenv('DB_SERVER') ?: 'localhost';
-//$username2 = getenv('DB_USERNAME2') ?: 'root';
-//$password2 = getenv('DB_PASSWORD2') ?: '';
-//$database2 = getenv('DB_DATABASE2') ?: 'sik9';
+$server2   = getenv('DB_SERVER') ?: 'localhost';
+$username2 = getenv('DB_USERNAME2') ?: 'root';
+$password2 = getenv('DB_PASSWORD2') ?: '';
+$database2 = getenv('DB_DATABASE2') ?: 'rl_app_db';
 
 try {
     // Mengaktifkan mode error reporting untuk mysqli
@@ -43,8 +43,8 @@ try {
     $config->set_charset('utf8');
 
     // Koneksi ke database kedua
-    //$mysqli = new mysqli($server2, $username2, $password2, $database2);
-    //$mysqli->set_charset('utf8');
+    $mysqli = new mysqli($server2, $username2, $password2, $database2);
+    $mysqli->set_charset('utf8');
 
 } catch (mysqli_sql_exception $e) {
     exit('Database Connection Error: ' . $e->getMessage());

@@ -2,6 +2,12 @@
 session_start();
 ob_start();
 require_once("../config/koneksi.php");
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../main_login/login.php?error=Akses ditolak!');
+    exit;
+}
+// Ambil data role user dari session
+$user_role = $_SESSION['role'] ?? '';
 if (isset($_GET['page'])){ $page = $_GET['page']; }
 ?>
 <!DOCTYPE html>
@@ -41,7 +47,7 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                     <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                         <a href="dashboard_staff.php?unit=user" class="dropdown-item"><i class="fas fa-user mr-2"></i> Data User</a>
                         <div class="dropdown-divider"></div>
-                        <a href="../main_login/form_login.php" class="dropdown-item"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+                        <a href="logout.php" class="dropdown-item"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
                     </div>
             </li>
         </ul>
@@ -60,6 +66,8 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                             <p>Dashboard</p>
                         </a>
                     </li>
+                    <!-- Menu Rekapitulasi Data - Untuk Admin, Manager, dan IT -->
+                    <?php if (in_array($user_role, ['Admin', 'Manager', 'IT', 'Pemasaran', 'Kepegawaian'])): ?>
                     <li class="nav-header" style="color: black;">REKAPITULASI DATA</li>
                     <li class="nav-item">
                         <a href="#" class="nav-link">
@@ -71,12 +79,6 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                                 <a href="main_app.php?page=RL_rkp_kegiatan_pelayanan_ranap" class="nav-link">
                                     <i class="nav-icon fas fa-procedures" style="color: black;"></i>
                                     <p style="font-size: 12px; color: black;">RL 3.2 Kegiatan Pelayanan Ranap</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="" class="nav-link">
-                                    <i class="nav-icon fas fa-procedures" style="color: black;"></i>
-                                    <p style="font-size: 11px; color: black;">RL 3.3 Rekap Pelayanan Rwt Darurat</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -93,6 +95,50 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                             </li>
                         </ul>
                     </li>
+                    <?php endif; ?>
+                    <!-- Menu Setting User - Hanya untuk Admin -->
+                    <?php if ($user_role == 'Admin' || $user_role == 'IT'): ?>
+                    <li class="nav-header" style="color: black;">SETTING USER</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-user-cog" style="color: black;"></i>
+                            <p style="color: black;">Management User<i class="right fas fa-angle-left" style="color: black;"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="main_app.php?page=user_data" class="nav-link">
+                                    <i class="nav-icon fas fa-users" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">Data User</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <?php endif; ?>
+
+                    <!-- Menu Skrining Gizi - Hanya untuk role Gizi -->
+                    <?php if ($user_role == 'Gizi'): ?>
+                    <li class="nav-header" style="color: black;">SKRINING GIZI</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-heartbeat" style="color: black;"></i>
+                            <p style="color: black;">Menu Gizi<i class="right fas fa-angle-left" style="color: black;"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="main_app.php?page=skrining_gizi_data" class="nav-link">
+                                    <i class="nav-icon fas fa-file-medical" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">Data Skrining</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="main_app.php?page=skrining_gizi_laporan" class="nav-link">
+                                    <i class="nav-icon fas fa-chart-bar" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">Laporan Gizi</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <?php endif; ?>
                 </ul>
             </nav>
         </div>
@@ -104,21 +150,6 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
             </div>
         </div>
     </div>
-    <!--Modal logout -->
-    <div id="modallogout" class="modal fade" role="dialog">
-        <div class="modal-dialog" align="center">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <form method="POST" action="logout.php">
-                        <strong>Anda yakin ingin Logout Dari Aplikasi ?&nbsp;&nbsp;</strong>
-                        <input type="submit" name="logout" class="btn btn-danger" style="width: 60px" value="Ya">
-                        <button type="button" class="btn btn-warning" data-dismiss="modal" style="width: 60px">Batal</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Akhir Modal logout -->
 </div>
 <footer class="main-footer" style="position:fixed;bottom:0;width:100%;background:#d9dde0;color:#00070c;z-index:9999;padding:0;">
   <div style="overflow:hidden;white-space:nowrap;">
