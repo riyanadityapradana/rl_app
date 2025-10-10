@@ -25,20 +25,8 @@ if ($page == "skrining_gizi_dashboard"){
 if ($page == "skrining_gizi_data"){
   require_once("page/skrining_gizi/data_skrining.php");
 }
-if ($page == "skrining_gizi_laporan"){
-  require_once("page/skrining_gizi/laporan.php");
-}
-if ($page == "skrining_gizi_input"){
-  require_once("page/skrining_gizi/input_skrining.php");
-}
 if ($page == "skrining_gizi_detail"){
   require_once("page/skrining_gizi/detail_skrining.php");
-}
-if ($page == "skrining_gizi_edit"){
-  require_once("page/skrining_gizi/edit_skrining.php");
-}
-if ($page == "skrining_gizi_delete"){
-  require_once("page/skrining_gizi/delete_skrining.php");
 }
 if ($page == "get_skrining_detail"){
   require_once("page/skrining_gizi/get_skrining_detail.php");
@@ -46,8 +34,9 @@ if ($page == "get_skrining_detail"){
 if ($page == "get_skrining_hasil_detail"){
   require_once("page/skrining_gizi/get_skrining_hasil_detail.php");
 }
-if ($page == "print_skrining"){
-  require_once("page/skrining_gizi/print_skrining.php");
+// Export Excel
+if ($page == "export_excel_skrining_gizi"){
+  require_once("page/skrining_gizi/export_excel.php");
 }
 // Rekapitulasi Pengunjung (RL 3.2)
 if ($page == "RL_rkp_kegiatan_pelayanan_ranap"){

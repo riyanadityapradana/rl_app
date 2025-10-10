@@ -115,7 +115,9 @@
         <div class="card">
           <div class="card-header">
             <div class="card-tools" style="float: left; text-align: left;">
-              
+              <a href="javascript:void(0);" onclick="exportExcel()" class="btn btn-tool btn-sm" style="background:rgba(34, 139, 34, 1); color: white;">
+                <i class="fas fa-file-excel" style="color: white;"></i> Export Excel
+              </a>
             </div>
             <div class="card-tools" style="float: right; text-align: right;">
               <a href="#" class="btn btn-tool btn-sm" data-card-widget="collapse" style="background:rgba(69, 77, 85, 1)">
@@ -285,5 +287,18 @@ function showDetail(no_rawat) {
             alert('Gagal mengambil data detail skrining');
         }
     });
+}
+
+function exportExcel() {
+    // Get form values
+    const tahun = document.getElementById('tahun').value;
+    const bulan = document.getElementById('bulan').value;
+    const kategori_umur = document.getElementById('kategori_umur').value;
+
+    // Construct export URL
+    const exportUrl = `main_app.php?page=export_excel_skrining_gizi&tahun=${tahun}&bulan=${bulan}&kategori_umur=${kategori_umur}`;
+
+    // Open in new window/tab
+    window.open(exportUrl, '_blank');
 }
 </script>

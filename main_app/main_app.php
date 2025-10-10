@@ -124,6 +124,12 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                             <p style="color: black;">Menu Gizi<i class="right fas fa-angle-left" style="color: black;"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
+                            <!-- <li class="nav-item">
+                                <a href="main_app.php?page=skrining_gizi_dashboard" class="nav-link">
+                                    <i class="nav-icon fas fa-plus-circle" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">Input Data Skrining</p>
+                                </a>
+                            </li> -->
                             <li class="nav-item">
                                 <a href="main_app.php?page=skrining_gizi_data" class="nav-link">
                                     <i class="nav-icon fas fa-file-medical" style="color: black;"></i>

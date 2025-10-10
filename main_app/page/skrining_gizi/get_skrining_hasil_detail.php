@@ -8,7 +8,7 @@ if (empty($no_rawat)) {
     exit();
 }
 
-$query = mysqli_query($mysqli, "
+$query = mysqli_query($config, "
     SELECT * FROM skrining_gizi WHERE no_rawat = '$no_rawat' ORDER BY created_at DESC LIMIT 1
 ");
 
