@@ -38,6 +38,21 @@ if ($page == "get_skrining_hasil_detail"){
 if ($page == "export_excel_skrining_gizi"){
   require_once("page/skrining_gizi/export_excel.php");
 }
+
+
+// Data Asuhan Gizi
+if ($page == "data_asuhan_gizi"){
+   require_once("page/asuhan_gizi/data_asuhan_gizi.php");
+}
+if ($page == "get_asuhan_gizi_detail"){
+   require_once("page/asuhan_gizi/get_asuhan_gizi_detail.php");
+}
+// Export Excel
+if ($page == "export_excel_data_asuhan_gizi"){
+   require_once("page/asuhan_gizi/export_excel.php");
+}
+
+
 // Rekapitulasi Pengunjung (RL 3.2)
 if ($page == "RL_rkp_kegiatan_pelayanan_ranap"){
   require_once("page/RL-RANAP/RL_rkp_kegiatan_pelayanan_ranap.php");
@@ -61,5 +76,39 @@ if ($page == "RL_rkp_kunjungan"){
 // Export Excel
 if ($page == "export_excel_rl_3_5"){
   require_once("page/RL_3.5/export_excel.php");
+}
+
+// Rekap kunjungan
+else if ($page == "rekap_pasien_poli"){
+  require_once("page/rekap-kunjungan-pasien/rawat-jalan/rekap_pasien_poli.php");
+}
+else if ($page == "rekap_pasien_ranap"){
+  require_once("page/rekap-kunjungan-pasien/rawat-inap/rekap_pasien_ranap.php");
+}
+  else if ($page == "rekap_px_usia_ranap"){
+    require_once("page/rekap-kunjungan-pasien/rawat-inap/rekap_px_usia_ranap.php");
+  }
+else if ($page == "rekap_px_usia_ralan"){
+  require_once("page/rekap-kunjungan-pasien/rawat-jalan/rekap_px_usia_ralan.php");
+}
+else if ($page == "rekap_pasien_ranap_kabupaten"){
+  require_once("page/rekap-kunjungan-pasien/rawat-inap/rekap_pasien_ranap_kabupaten.php");
+}
+// Picare
+else if ($page == "daftar"){
+  require_once("page/pi-care/pi-care_daftar.php");
+}
+else if ($page == 'lap_pi-care_daftar'){
+  require_once("page/pi-care/lap_pi-care_daftar.php");
+}
+else if ($page == "batal"){
+  require_once("page/pi-care/pi-care_batal.php");
+}
+else if ($page == "alasan"){
+  require_once("page/pi-care/pi-care_alasan.php");
+}
+// Resep Obat Update
+else if ($page == "rsp-obat-update"){
+  require_once("page/rsp-obat-update/rsp-obat-update.php");
 }
 ?>

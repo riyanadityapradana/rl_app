@@ -139,6 +139,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                   <option value="Kepegawaian" <?php echo $user_data['role'] == 'Kepegawaian' ? 'selected' : ''; ?>>Kepegawaian</option>
                   <option value="Perawat" <?php echo $user_data['role'] == 'Perawat' ? 'selected' : ''; ?>>Perawat</option>
                   <option value="Gizi" <?php echo $user_data['role'] == 'Gizi' ? 'selected' : ''; ?>>Gizi</option>
+                  <option value="RM" <?php echo $user_data['role'] == 'RM' ? 'selected' : ''; ?>>RM</option>
                   <option value="User" <?php echo $user_data['role'] == 'User' ? 'selected' : ''; ?>>User</option>
                 </select>
               </div>

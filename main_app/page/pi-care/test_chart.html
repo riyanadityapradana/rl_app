@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Chart.js</title>
+    <script src="../../../assets/plugins/chart.js/Chart.min.js"></script>
+</head>
+<body>
+    <h1>Test Chart.js</h1>
+    <canvas id="testChart" width="400" height="200"></canvas>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Chart.js version:', typeof Chart !== 'undefined' ? Chart.version : 'Not loaded');
+            
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded!');
+                return;
+            }
+            
+            var ctx = document.getElementById('testChart').getContext('2d');
+            var chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Test Data',
+                        data: [12, 19, 3, 5, 2, 3],
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            console.log('Test chart created:', chart);
+        });
+    </script>
+</body>
+</html> 

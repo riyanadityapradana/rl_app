@@ -120,6 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                   <option value="Kepegawaian" <?php echo (isset($_POST['role']) && $_POST['role'] == 'Kepegawaian') ? 'selected' : ''; ?>>Kepegawaian</option>
                   <option value="Perawat" <?php echo (isset($_POST['role']) && $_POST['role'] == 'Perawat') ? 'selected' : ''; ?>>Perawat</option>
                   <option value="Gizi" <?php echo (isset($_POST['role']) && $_POST['role'] == 'Gizi') ? 'selected' : ''; ?>>Gizi</option>
+                  <option value="RM" <?php echo (isset($_POST['role']) && $_POST['role'] == 'RM') ? 'selected' : ''; ?>>RM</option>
                   <option value="User" <?php echo (isset($_POST['role']) && $_POST['role'] == 'User') ? 'selected' : ''; ?>>User</option>
                 </select>
               </div>

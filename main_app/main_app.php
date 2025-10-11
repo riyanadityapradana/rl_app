@@ -66,8 +66,8 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                             <p>Dashboard</p>
                         </a>
                     </li>
-                    <!-- Menu Rekapitulasi Data - Untuk Admin, Manager, dan IT -->
-                    <?php if (in_array($user_role, ['Admin', 'Manager', 'IT', 'Pemasaran', 'Kepegawaian'])): ?>
+                    <!-- Menu Rekapitulasi Data - Untuk Admin, RM, dan IT -->
+                    <?php if (in_array($user_role, ['Admin', 'RM', 'IT'])): ?>
                     <li class="nav-header" style="color: black;">REKAPITULASI DATA</li>
                     <li class="nav-item">
                         <a href="#" class="nav-link">
@@ -91,6 +91,63 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                                 <a href="main_app.php?page=RL_rkp_kunjungan" class="nav-link">
                                     <i class="nav-icon fas fa-file" style="color: black;"></i>
                                     <p style="font-size: 12px; color: black;">RL 3.5 Rekapitulasi Kunjungan</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <?php endif; ?>
+                    <!-- Menu Pi-Care - Untuk Admin, IT, dan Pemasaran -->
+                    <?php if (in_array($user_role, ['Admin', 'IT', 'Pemasaran'])): ?>
+                    <li class="nav-header" style="color: black;">PI-CARE</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fab fa-whatsapp" style="color: green;"></i><p style="color: black;">Grafik Pi-Care<i class="fas fa-angle-left right" style="color: black;"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="main_app.php?page=daftar" class="nav-link">
+                                    <i class="nav-icon fas fa-caret-right" style="color: black;"></i><p style="color: black;">PENDAFTARAN</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="main_app.php?page=batal" class="nav-link">
+                                    <i class="nav-icon fas fa-caret-right" style="color: black;"></i><p style="color: black;">PEMBATALAN</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="main_app.php?page=alasan" class="nav-link">
+                                    <i class="nav-icon fas fa-caret-right" style="color: black;"></i><p style="color: black;">ALASAN PEMBATALAN</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-header" style="color: black; font-size: 13px;">REKAPITULASI KUNJUNGAN PASIEN </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-chart-bar" style="color: black;"></i>
+                            <p style="color: black;">Rekap Kunjungan<i class="right fas fa-angle-left" style="color: black;"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="main_app.php?page=rekap_pasien_poli" class="nav-link">
+                                    <i class="nav-icon fas fa-user-injured" style="color: black;"></i>
+                                    <p style="font-size: 14px; color: black;">Rekap Pasien Rawat Jalan</p>
+                                </a>
+                                <a href="main_app.php?page=rekap_pasien_ranap" class="nav-link">
+                                    <i class="nav-icon fas fa-procedures" style="color: black;"></i>
+                                    <p style="font-size: 14px; color: black;">Rekap Pasien Rawat Inap</p>
+                                </a>
+                                <a href="main_app.php?page=rekap_px_usia_ranap" class="nav-link">
+                                    <i class="nav-icon fas fa-user-injured" style="color: black;"></i>
+                                    <p style="font-size: 14px; color: black;">Rkp px usia rawat inap</p>
+                                </a>
+                                <a href="main_app.php?page=rekap_px_usia_ralan" class="nav-link">
+                                    <i class="nav-icon fas fa-user-injured" style="color: black;"></i>
+                                    <p style="font-size: 14px; color: black;">Rkp px usia rawat jalan</p>
+                                </a>
+                                <a href="main_app.php?page=rekap_pasien_ranap_kabupaten" class="nav-link">
+                                    <i class="nav-icon fas fa-user-injured" style="color: black;"></i>
+                                    <p style="font-size: 14px; color: black;">Rkp px ranap per kabupaten</p>
                                 </a>
                             </li>
                         </ul>
@@ -133,13 +190,13 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                             <li class="nav-item">
                                 <a href="main_app.php?page=skrining_gizi_data" class="nav-link">
                                     <i class="nav-icon fas fa-file-medical" style="color: black;"></i>
-                                    <p style="font-size: 12px; color: black;">Data Skrining</p>
+                                    <p style="font-size: 12px; color: black;">Data Skrining Awal</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="main_app.php?page=skrining_gizi_laporan" class="nav-link">
-                                    <i class="nav-icon fas fa-chart-bar" style="color: black;"></i>
-                                    <p style="font-size: 12px; color: black;">Laporan Gizi</p>
+                                <a href="main_app.php?page=data_asuhan_gizi" class="nav-link">
+                                    <i class="nav-icon fas fa-file-medical" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">Data Asuhan Gizi</p>
                                 </a>
                             </li>
                         </ul>
