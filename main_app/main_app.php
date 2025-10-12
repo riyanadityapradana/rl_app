@@ -82,6 +82,12 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="main_app.php?page=RL_rkp_igd" class="nav-link">
+                                    <i class="nav-icon fas fa-procedures" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">RL 3.3 Kegiatan Pelayanan Rawat Darurat</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="main_app.php?page=RL_rkp_pengunjung" class="nav-link">
                                     <i class="nav-icon fas fa-file" style="color: black;"></i>
                                     <p style="font-size: 12px; color: black;">RL 3.4 Rekapitulasi Pengunjung</p>
