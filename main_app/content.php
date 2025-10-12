@@ -115,8 +115,13 @@ else if ($page == "batal"){
 else if ($page == "alasan"){
   require_once("page/pi-care/pi-care_alasan.php");
 }
-// Resep Obat Update
-else if ($page == "rsp-obat-update"){
-  require_once("page/rsp-obat-update/rsp-obat-update.php");
+
+
+// 10 Besar Penyakit
+else if ($page == "10_besar_penyakit_ralan"){
+  require_once("page/rkp_besar_penyakit/10_besar_penyakit_ralan.php");
+}
+else if ($page == "10_besar_penyakit_ranap"){
+  require_once("page/rkp_besar_penyakit/10_besar_penyakit_ranap.php");
 }
 ?>

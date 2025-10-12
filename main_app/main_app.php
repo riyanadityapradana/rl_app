@@ -158,6 +158,25 @@ if (isset($_GET['page'])){ $page = $_GET['page']; }
                             </li>
                         </ul>
                     </li>
+                    <li class="nav-header" style="color: black; font-size: 13px;">STATISTIK 10 BESAR PENYAKIT</li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-chart-bar" style="color: black;"></i>
+                            <p style="color: black; font-size: 13px;">Rekap Penyakit Terbanyak<i class="right fas fa-angle-left" style="color: black;"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="main_app.php?page=10_besar_penyakit_ralan" class="nav-link">
+                                    <i class="nav-icon fas fa-user-injured" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">10 Besar Penyakit Rawat Jalan</p>
+                                </a>
+                                <a href="main_app.php?page=10_besar_penyakit_ranap" class="nav-link">
+                                    <i class="nav-icon fas fa-procedures" style="color: black;"></i>
+                                    <p style="font-size: 12px; color: black;">10 Besar Penyakit Rawat Inap</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     <?php endif; ?>
                     <!-- Menu Setting User - Hanya untuk Admin -->
                     <?php if ($user_role == 'Admin' || $user_role == 'IT'): ?>
