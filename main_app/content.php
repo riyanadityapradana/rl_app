@@ -90,8 +90,14 @@ if ($page == "export_excel_rl_3_3"){
 else if ($page == "rekap_pasien_poli"){
   require_once("page/rekap-kunjungan-pasien/rawat-jalan/rekap_pasien_poli.php");
 }
+else if ($page == "jum_px_ralan"){
+  require_once("page/rekap-kunjungan-pasien/rawat-jalan/jum_px_ralan.php");
+}
 else if ($page == "rekap_pasien_ranap"){
   require_once("page/rekap-kunjungan-pasien/rawat-inap/rekap_pasien_ranap.php");
+}
+else if ($page == "jum_px_ranap"){
+  require_once("page/rekap-kunjungan-pasien/rawat-inap/jum_px_ranap.php");
 }
   else if ($page == "rekap_px_usia_ranap"){
     require_once("page/rekap-kunjungan-pasien/rawat-inap/rekap_px_usia_ranap.php");
@@ -102,6 +108,8 @@ else if ($page == "rekap_px_usia_ralan"){
 else if ($page == "rekap_pasien_ranap_kabupaten"){
   require_once("page/rekap-kunjungan-pasien/rawat-inap/rekap_pasien_ranap_kabupaten.php");
 }
+
+
 // Picare
 else if ($page == "daftar"){
   require_once("page/pi-care/pi-care_daftar.php");

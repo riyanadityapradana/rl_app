@@ -141,8 +141,25 @@ foreach ($minggu as $i => $range) {
     <script src="../assets/plugins/chart.js/Chart.min.js"></script>
 </head>
 <body>
+<!-- Content Header (Page header) -->
+<section class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h2 style="font-size: 18px; color: black;">REKAP KUNJUNGAN PASIEN HARIAN RAWAT JALAN</h2>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="dashboard_staff.php?page=beranda">Home</a></li>
+          <li class="breadcrumb-item active">Rekap Kunjungan Pasien</li>
+          <li class="breadcrumb-item"><a href="main_app.php?page=jum_px_ralan">Jumlah Pasien Ralan</a></li>
+        </ol>
+      </div>
+    </div>
+  </div><!-- /.container-fluid -->
+</section>
+<section class="content">
 <div class="top-bar">
-    <h2>REKAP KUNJUNGAN PASIEN HARIAN RAWAT JALAN</h2>
     <button class="btn-grafik" onclick="showModal()">Lihat Grafik Bulanan</button>
 </div>
 <table>
@@ -197,6 +214,7 @@ foreach ($minggu as $i => $range) {
     <canvas id="chartBulanan" style="min-width:350px; min-height:300px;"></canvas>
   </div>
 </div>
+</section>
 <script>
 function showModal() {
   document.getElementById('modalGrafik').style.display = 'flex';
