@@ -4,11 +4,21 @@ if (!isset($conn)) {
     die("Database connection not available. Please check your configuration.");
 }
 
-// Query untuk mengambil data pembatalan pasien HANYA bulan ini
-$bulan_ini = date('Y-m');
+// Query untuk mengambil data pembatalan pasien berdasarkan filter bulan dan tahun
+$bulan = isset($_POST['bulan']) ? $_POST['bulan'] : date('m');
+$tahun = isset($_POST['tahun']) ? $_POST['tahun'] : date('Y');
+
+// Validasi input
+if ((int)$bulan < 1 || (int)$bulan > 12) $bulan = date('m');
+if ((int)$tahun < 2000 || (int)$tahun > 2100) $tahun = date('Y');
+
+$bulan_filter = $bulan;
+$tahun_filter = $tahun;
+$bulan_tahun_filter = $tahun_filter . '-' . str_pad($bulan_filter, 2, '0', STR_PAD_LEFT);
+
 $sql = "SELECT DATE_FORMAT(insert_at, '%Y-%m-%d') AS tanggal, COUNT(*) AS jumlah
         FROM batal_daftar
-        WHERE DATE_FORMAT(insert_at, '%Y-%m') = '$bulan_ini'
+        WHERE DATE_FORMAT(insert_at, '%Y-%m') = '$bulan_tahun_filter'
         AND is_verified <> '0'
         GROUP BY tanggal
         ORDER BY tanggal ASC";
@@ -30,12 +40,12 @@ $labels = [];
 $jumlahPasien = [];
 
 if (!$result || $result->num_rows == 0) {
-    // Data dummy untuk hari-hari bulan ini
-    $hari_terakhir = date('t');
+    // Data dummy untuk hari-hari bulan yang difilter
+    $hari_terakhir = date('t', strtotime($tahun_filter . '-' . $bulan_filter . '-01'));
     $labels = [];
     $jumlahPasien = [];
     for ($i = 1; $i <= $hari_terakhir; $i++) {
-        $tgl = date('Y-m-') . sprintf('%02d', $i);
+        $tgl = $tahun_filter . '-' . $bulan_filter . '-' . sprintf('%02d', $i);
         $labels[] = $tgl;
         $jumlahPasien[] = rand(1, 15);
     }
@@ -77,8 +87,67 @@ echo "<script>console.log('Data:', " . json_encode($jumlahPasien) . ");</script>
 
 <!-- Main content -->
 <section class="content">
-     <div class="container-fluid">
-          <div class="row">
+      <div class="container-fluid">
+           <!-- Filter Section -->
+           <div class="row mb-3">
+                <div class="col-md-12">
+                     <div class="card">
+                          <div class="card-header" style="background:rgb(40, 167, 69)">
+                               <h3 class="card-title" style="color: white;"><i class="fas fa-filter"></i> Filter Data</h3>
+                          </div>
+                          <div class="card-body">
+                               <form method="POST" action="">
+                                    <div class="row">
+                                         <div class="col-md-3">
+                                              <div class="form-group">
+                                                   <label>Pilih Bulan:</label>
+                                                   <select name="bulan" class="form-control" required>
+                                                        <option value="">-- Pilih Bulan --</option>
+                                                        <option value="01" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '01') ? 'selected' : '' ?>>Januari</option>
+                                                        <option value="02" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '02') ? 'selected' : '' ?>>Februari</option>
+                                                        <option value="03" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '03') ? 'selected' : '' ?>>Maret</option>
+                                                        <option value="04" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '04') ? 'selected' : '' ?>>April</option>
+                                                        <option value="05" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '05') ? 'selected' : '' ?>>Mei</option>
+                                                        <option value="06" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '06') ? 'selected' : '' ?>>Juni</option>
+                                                        <option value="07" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '07') ? 'selected' : '' ?>>Juli</option>
+                                                        <option value="08" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '08') ? 'selected' : '' ?>>Agustus</option>
+                                                        <option value="09" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '09') ? 'selected' : '' ?>>September</option>
+                                                        <option value="10" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '10') ? 'selected' : '' ?>>Oktober</option>
+                                                        <option value="11" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '11') ? 'selected' : '' ?>>November</option>
+                                                        <option value="12" <?= (isset($_POST['bulan']) && $_POST['bulan'] == '12') ? 'selected' : '' ?>>Desember</option>
+                                                   </select>
+                                              </div>
+                                         </div>
+                                         <div class="col-md-3">
+                                              <div class="form-group">
+                                                   <label>Pilih Tahun:</label>
+                                                   <select name="tahun" class="form-control" required>
+                                                        <option value="">-- Pilih Tahun --</option>
+                                                        <?php
+                                                        $tahun_sekarang = date('Y');
+                                                        for ($tahun_loop = $tahun_sekarang; $tahun_loop >= $tahun_sekarang - 5; $tahun_loop--) {
+                                                             $selected = (isset($_POST['tahun']) && $_POST['tahun'] == $tahun_loop) ? 'selected' : '';
+                                                             echo "<option value='$tahun_loop' $selected>$tahun_loop</option>";
+                                                        }
+                                                        ?>
+                                                   </select>
+                                              </div>
+                                         </div>
+                                         <div class="col-md-3">
+                                              <div class="form-group">
+                                                   <label>&nbsp;</label><br>
+                                                   <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+                                                   <a href="main_app.php?page=pi-care_batal" class="btn btn-secondary"><i class="fas fa-refresh"></i> Reset</a>
+                                              </div>
+                                         </div>
+                                    </div>
+                               </form>
+                          </div>
+                     </div>
+                </div>
+           </div>
+
+           <div class="row">
                <div class="col-md-6">
                     <!-- AREA CHART -->
                     <div class="card card-primary">
@@ -99,7 +168,15 @@ echo "<script>console.log('Data:', " . json_encode($jumlahPasien) . ");</script>
                          </div>
                          <!-- Summary Report Langsung di bawah chart -->
                          <div style="margin-top: 10px; margin-left: 0; font-size: 15px;">
-                              <b>PEMBATALAN <?php echo strtoupper(date('F Y')); ?></b><br>
+                              <?php
+                              $nama_bulan = [
+                                  '01' => 'JANUARI', '02' => 'FEBRUARI', '03' => 'MARET', '04' => 'APRIL',
+                                  '05' => 'MEI', '06' => 'JUNI', '07' => 'JULI', '08' => 'AGUSTUS',
+                                  '09' => 'SEPTEMBER', '10' => 'OKTOBER', '11' => 'NOVEMBER', '12' => 'DESEMBER'
+                              ];
+                              $nama_bulan_terpilih = isset($nama_bulan[$bulan_filter]) ? $nama_bulan[$bulan_filter] : strtoupper(date('F'));
+                              ?>
+                              <b>PEMBATALAN <?php echo $nama_bulan_terpilih . ' ' . $tahun_filter; ?></b><br>
                               Jumlah Total Pembatalan : <?php echo $total; ?><br>
                               Rata-rata Pembatalan Perhari : <?php echo $rata; ?><br>
                               Jumlah Pembatalan Maksimal Perhari : <?php echo $max; ?><br>
@@ -116,8 +193,11 @@ echo "<script>console.log('Data:', " . json_encode($jumlahPasien) . ");</script>
                     <div class="card-header" style="background:rgb(0, 123, 255, 1)">
                          <h3 class="card-title" style="color: white;">DATA PASIEN</h3>
                          <div class="card-tools">
-                         <a href="#" data-toggle='modal' data-target='#modalFilterPDF' class="btn btn-tool btn-sm"> 
-                              <i class="fas fa-file-pdf"></i>
+                         <a href="page/pi-care/lap_pi-care_batal_pdf.php?dari=<?php echo $tahun_filter . '-' . $bulan_filter . '-01'; ?>&sampai=<?php echo date('Y-m-t', strtotime($tahun_filter . '-' . $bulan_filter . '-01')); ?>" onclick="window.open(this.href, 'printWindow', 'width=1200,height=800,scrollbars=yes,resizable=yes'); return false;" class="btn btn-tool btn-sm btn-success">
+                              <i class="fas fa-print"></i> Print
+                         </a>
+                         <a href="#" data-toggle='modal' data-target='#modalFilterPDF' class="btn btn-tool btn-sm">
+                              <i class="fas fa-file-pdf"></i> PDF Custom
                          </a>
                          <a href="#" class="btn btn-tool btn-sm" data-card-widget="collapse">
                               <i class="fas fa-bars"></i>
@@ -160,13 +240,15 @@ echo "<script>console.log('Data:', " . json_encode($jumlahPasien) . ");</script>
                     <h3>PILIH TANGGAL UNTUK PDF</h3>
                </div>
                <div class="modal-body" align="left">
-                    <form role="form" method="get" action="page/pi-care/lap_pi-care_batal_pdf.php" target="_blank">
+                    <form role="form" method="get" action="page/pi-care/lap_pi-care_batal_pdf.php" onsubmit="window.open('', 'printWindow', 'width=1200,height=800,scrollbars=yes,resizable=yes'); this.target='printWindow'; return true;">
                          <div class="row">
                               <div class="form-group col-lg-6">
-                                   <input type="date" name="tanggalawal" class="form-control" placeholder="<?=date('Y-m-d');?>">
+                                   <label>Tanggal Awal:</label>
+                                   <input type="date" name="dari" class="form-control" value="<?php echo $tahun_filter . '-' . $bulan_filter . '-01'; ?>">
                               </div>
                               <div class="form-group col-lg-6">
-                                   <input type="date" name="tanggalakhir" class="form-control" placeholder="<?=date('Y-m-d');?>">
+                                   <label>Tanggal Akhir:</label>
+                                   <input type="date" name="sampai" class="form-control" value="<?php echo date('Y-m-t', strtotime($tahun_filter . '-' . $bulan_filter . '-01')); ?>">
                               </div>
                          </div>
                          <div class="row">
@@ -185,7 +267,7 @@ echo "<script>console.log('Data:', " . json_encode($jumlahPasien) . ");</script>
 <!-- Bagian modal -->
 
 <!-- Script Chart -->
-<script src="../assets/plugins/chart.js/Chart.min.js"></script>
+<script src="../../assets/plugins/chart.js/Chart.min.js"></script>
 <script>
     // Tunggu sampai DOM selesai loading
     document.addEventListener('DOMContentLoaded', function() {

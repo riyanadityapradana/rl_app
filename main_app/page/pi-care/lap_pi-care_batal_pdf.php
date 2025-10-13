@@ -79,21 +79,21 @@ $min = $hari > 0 ? min($jumlahPasien) : 0;
         }
         .chart-section {
             flex: 0.5;
-            background: rgb(172, 172, 172);
+            background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
-            border: 1px solid rgb(171, 170, 170);
-            color: white;
+            border: 1px solid #ddd;
+            color: black;
         }
         .chart-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 15px;
-            color: white;
+            color: black;
         }
         .chart-container {
             position: relative;
-            height: 200px;
+            height: 250px;
             margin-bottom: 20px;
         }
         .table-section {
@@ -157,6 +157,7 @@ $min = $hari > 0 ? min($jumlahPasien) : 0;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            z-index: 1000;
         }
         .print-btn:hover {
             background: #0056b3;
@@ -164,12 +165,14 @@ $min = $hari > 0 ? min($jumlahPasien) : 0;
     </style>
 </head>
 <body>
+    <button class="print-btn" onclick="window.print();">🖨️ Print PDF</button>
+
     <script>
-        // Auto print saat halaman dimuat
+        // Auto print saat halaman dimuat dalam popup window
         window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 1000); // Delay 1 detik agar halaman dan chart selesai dimuat
+            // Jangan auto print karena sekarang dalam popup window
+            // User bisa klik tombol print manual atau Ctrl+P
+            console.log('PDF dimuat dalam popup window. Gunakan tombol Print atau Ctrl+P.');
         };
     </script>
     
@@ -187,7 +190,7 @@ $min = $hari > 0 ? min($jumlahPasien) : 0;
             <div class="chart-container">
                 <canvas id="barChart"></canvas>
             </div>
-            <div style="margin-top: 10px; margin-left: 0; font-size: 15px; background: white; padding: 15px; border-radius: 5px; color: black;">
+            <div style="margin-top: 10px; margin-left: 0; font-size: 15px; background: white; padding: 15px; border-radius: 5px; color: black; border: 1px solid #ddd;">
                 <b style="color: black;">PEMBATALAN <?php echo strtoupper(date('F Y', strtotime($dari))); ?></b><br>
                 Jumlah Total Pembatalan : <?php echo number_format($total); ?><br>
                 Rata-rata Pembatalan Perhari : <?php echo $rata; ?><br>
@@ -250,17 +253,17 @@ $min = $hari > 0 ? min($jumlahPasien) : 0;
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true
-                        },
+                    xAxes: [{
                         gridLines: {
                             display: false
                         }
                     }],
-                    xAxes: [{
+                    yAxes: [{
                         gridLines: {
                             display: false
+                        },
+                        ticks: {
+                            beginAtZero: true
                         }
                     }]
                 },

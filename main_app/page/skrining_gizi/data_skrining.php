@@ -135,6 +135,7 @@
                   <th style="text-align: center; color: white;">No. RM</th>
                   <th style="text-align: center; color: white;">Nama Pasien</th>
                   <th style="text-align: center; color: white;">Usia</th>
+                  <th style="text-align: center; color: white;">Kategori</th>
                   <th style="text-align: center; color: white;">Jenis Kelamin</th>
                   <th style="text-align: center; color: white;">Status Gizi</th>
                   <th style="text-align: center; color: white;">Aksi</th>
@@ -142,20 +143,6 @@
               </thead>
               <tbody>
                <?php
-               // Fungsi untuk mengkonversi kategori umur ke batas usia maksimal
-               function get_max_age_from_category($kategori) {
-                   $batas_umur = [
-                       'bayi' => 1,           // Bayi: 0 - <1 tahun
-                       'balita' => 5,         // Balita: 1 - <5 tahun
-                       'anak' => 12,          // Anak-anak: 5 - <12 tahun
-                       'remaja' => 18,        // Remaja: 12 - <18 tahun
-                       'dewasa_muda' => 30,   // Dewasa Muda: 18 - <30 tahun
-                       'dewasa' => 45,        // Dewasa: 30 - <45 tahun
-                       'lansia_awal' => 60,   // Lansia Awal: 45 - <60 tahun
-                       'lansia_akhir' => 200   // Lansia Akhir: 60+ tahun
-                   ];
-                   return $batas_umur[$kategori] ?? 5;
-               }
 
                // Fungsi untuk mendapatkan label kategori umur
                function get_kategori_umur_label($kategori) {
@@ -176,9 +163,43 @@
                $tahun = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
                $bulan = isset($_GET['bulan']) ? $_GET['bulan'] : date('m');
                $kategori_umur = isset($_GET['kategori_umur']) ? $_GET['kategori_umur'] : 'balita';
-               $usia_max = get_max_age_from_category($kategori_umur);
 
-               // Query sesuai dengan struktur database server dengan kategori umur
+               // Set user-defined variables untuk kategori umur yang fleksibel
+               mysqli_query($config, "SET @tahun_laporan = $tahun");
+               mysqli_query($config, "SET @bulan_laporan = $bulan");
+               mysqli_query($config, "SET @kategori_uji = '$kategori_umur'");
+
+               // Menentukan Usia Minimal menggunakan CASE
+               mysqli_query($config, "
+                   SET @usia_min = CASE @kategori_uji
+                       WHEN 'bayi' THEN 0
+                       WHEN 'balita' THEN 1
+                       WHEN 'anak' THEN 5
+                       WHEN 'remaja' THEN 12
+                       WHEN 'dewasa_muda' THEN 18
+                       WHEN 'dewasa' THEN 30
+                       WHEN 'lansia_awal' THEN 45
+                       WHEN 'lansia_akhir' THEN 60
+                       ELSE 1
+                   END
+               ");
+
+               // Menentukan Usia Maksimal menggunakan CASE
+               mysqli_query($config, "
+                   SET @usia_max = CASE @kategori_uji
+                       WHEN 'bayi' THEN 1
+                       WHEN 'balita' THEN 5
+                       WHEN 'anak' THEN 12
+                       WHEN 'remaja' THEN 18
+                       WHEN 'dewasa_muda' THEN 30
+                       WHEN 'dewasa' THEN 45
+                       WHEN 'lansia_awal' THEN 60
+                       WHEN 'lansia_akhir' THEN 200
+                       ELSE 5
+                   END
+               ");
+
+               // Query utama untuk mengambil data skrining
                $query = mysqli_query($config, "
                    SELECT
                        psad.tanggal,
@@ -190,16 +211,16 @@
                        TIMESTAMPDIFF(YEAR, p.tgl_lahir, psad.tanggal) AS umur_tahun,
                        MOD(TIMESTAMPDIFF(MONTH, p.tgl_lahir, psad.tanggal), 12) AS umur_bulan,
                        psad.keluhan,
-                       psad.riwayat_penyakit,
                        psad.fisik_klinis,
                        psad.biokimia,
-                       psad.riwayat_makan
+                       CONCAT('Hasil tes untuk Kategori: ''', @kategori_uji, ''' (usia >=', @usia_min, ' & <', @usia_max, ' tahun)') AS kategori_info
                    FROM pilot_skrining_awal_diet AS psad
                    JOIN reg_periksa AS rp ON psad.no_rawat = rp.no_rawat
                    JOIN pasien AS p ON rp.no_rkm_medis = p.no_rkm_medis
-                   WHERE TIMESTAMPDIFF(YEAR, p.tgl_lahir, psad.tanggal) < $usia_max
-                     AND YEAR(psad.tanggal) = $tahun
-                     AND MONTH(psad.tanggal) = $bulan
+                   WHERE (TIMESTAMPDIFF(YEAR, p.tgl_lahir, psad.tanggal) >= @usia_min
+                     AND TIMESTAMPDIFF(YEAR, p.tgl_lahir, psad.tanggal) < @usia_max)
+                     AND YEAR(psad.tanggal) = @tahun_laporan
+                     AND MONTH(psad.tanggal) = @bulan_laporan
                    ORDER BY psad.tanggal ASC
                ");
 
@@ -216,6 +237,11 @@
                  <td><?php echo htmlspecialchars($data['no_rkm_medis']); ?></td>
                  <td><?php echo htmlspecialchars($data['nm_pasien']); ?></td>
                  <td><?php echo $usia_display; ?></td>
+                 <td>
+                   <span class="badge badge-info">
+                     <?php echo htmlspecialchars($data['kategori_info']); ?>
+                   </span>
+                 </td>
                  <td>
                    <span class="badge badge-<?php echo $data['jenis_kelamin'] == 'L' ? 'primary' : 'info'; ?>">
                      <?php echo $data['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan'; ?>

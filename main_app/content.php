@@ -40,7 +40,7 @@ if ($page == "export_excel_skrining_gizi"){
 }
 
 
-// Data Asuhan Gizi
+// Data Asuhan Gizi - Hanya untuk role Gizi
 if ($page == "data_asuhan_gizi"){
    require_once("page/asuhan_gizi/data_asuhan_gizi.php");
 }

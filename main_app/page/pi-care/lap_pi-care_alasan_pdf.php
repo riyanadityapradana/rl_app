@@ -101,17 +101,17 @@ foreach ($data as $val) {
         }
         .chart-section {
             flex: 0.5;
-            background: rgb(172, 172, 172);
+            background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
-            border: 1px solid rgb(171, 170, 170);
-            color: white;
+            border: 1px solid #ddd;
+            color: black;
         }
         .chart-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 15px;
-            color: white;
+            color: black;
         }
         .chart-container {
             position: relative;
@@ -179,6 +179,7 @@ foreach ($data as $val) {
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            z-index: 1000;
         }
         .print-btn:hover {
             background: #0056b3;
@@ -186,12 +187,14 @@ foreach ($data as $val) {
     </style>
 </head>
 <body>
+    <button class="print-btn" onclick="window.print();">🖨️ Print PDF</button>
+
     <script>
-        // Auto print saat halaman dimuat
+        // Auto print saat halaman dimuat dalam popup window
         window.onload = function() {
-            setTimeout(function() {
-                window.print();
-            }, 1000); // Delay 1 detik agar halaman dan chart selesai dimuat
+            // Jangan auto print karena sekarang dalam popup window
+            // User bisa klik tombol print manual atau Ctrl+P
+            console.log('PDF dimuat dalam popup window. Gunakan tombol Print atau Ctrl+P.');
         };
     </script>
     
@@ -288,7 +291,7 @@ foreach ($data as $val) {
                 legend: {
                     position: 'right',
                     labels: {
-                        fontColor: 'white',
+                        fontColor: 'black',
                         fontSize: 12
                     }
                 },
