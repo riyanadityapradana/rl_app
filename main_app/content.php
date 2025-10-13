@@ -132,4 +132,7 @@ else if ($page == "10_besar_penyakit_ralan"){
 else if ($page == "10_besar_penyakit_ranap"){
   require_once("page/rkp_besar_penyakit/10_besar_penyakit_ranap.php");
 }
+else if ($page == "10_besar_penyakit_ranap_per_ruangan"){
+  require_once("page/rkp_besar_penyakit/10_besar_penyakit_ranap_per_ruangan.php");
+}
 ?>

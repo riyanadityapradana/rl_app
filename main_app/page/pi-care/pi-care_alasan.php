@@ -24,9 +24,9 @@ ORDER BY
   jumlah DESC;";
 
 try {
-    $result = $mysqli->query($sql);
+    $result = $conn->query($sql);
     if (!$result) {
-        throw new Exception("Query error: " . $mysqli->error);
+        throw new Exception("Query error: " . $conn->error);
     }
 } catch (Exception $e) {
     error_log("Database query failed: " . $e->getMessage());
@@ -208,7 +208,7 @@ foreach ($data as $val) {
                     <h3>PILIH TANGGAL UNTUK PDF</h3>
                </div>
                <div class="modal-body" align="left">
-                    <form role="form" method="get" action="unit/pi-care/lap_pi-care_alasan_pdf.php" target="_blank">
+                    <form role="form" method="get" action="page/pi-care/lap_pi-care_alasan_pdf.php" target="_blank">
                          <div class="row">
                               <div class="form-group col-lg-6">
                                    <label>Dari Tanggal:</label>

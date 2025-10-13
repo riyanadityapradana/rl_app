@@ -1,6 +1,6 @@
 <?php
 // Pastikan koneksi database tersedia
-if (!isset($mysqli)) {
+if (!isset($conn)) {
     die("Database connection not available. Please check your configuration.");
 }
 
@@ -15,9 +15,9 @@ $sql = "SELECT DATE_FORMAT(insert_at, '%Y-%m-%d') AS tanggal, COUNT(*) AS jumlah
 
 // Eksekusi query dengan error handling yang lebih baik
 try {
-    $result = $mysqli->query($sql);
+    $result = $conn->query($sql);
     if (!$result) {
-        throw new Exception("Query error: " . $mysqli->error);
+        throw new Exception("Query error: " . $conn->error);
     }
 } catch (Exception $e) {
     // Jika query gagal, gunakan data dummy
@@ -67,7 +67,7 @@ echo "<script>console.log('Data:', " . json_encode($jumlahPasien) . ");</script>
       </div>
       <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
-          <li class="breadcrumb-item"><a href="main_staff.php?unit=beranda">Home</a></li>
+          <li class="breadcrumb-item"><a href="main_app.php?page=beranda">Home</a></li>
           <li class="breadcrumb-item active">Pi-Care</li>
         </ol>
       </div>
@@ -161,7 +161,7 @@ echo "<script>console.log('Data:', " . json_encode($jumlahPasien) . ");</script>
                     <h3>PILIH TANGGAL UNTUK PDF</h3>
                </div>
                <div class="modal-body" align="left">
-                  <form action="unit/pi-care/lap_pi-care_daftar_pdf.php" method="get" target="_blank">
+                  <form action="page/pi-care/lap_pi-care_daftar_pdf.php" method="get" target="_blank">
                          <div class="row">
                               <div class="form-group col-lg-6">
                                    <input type="date" name="tanggalawal" class="form-control" placeholder="<?=date('Y-m-d');?>">

@@ -14,7 +14,7 @@ $sql = "SELECT DATE_FORMAT(insert_at, '%Y-%m-%d') AS tanggal, COUNT(*) AS jumlah
         GROUP BY tanggal
         ORDER BY tanggal ASC";
 
-$result = $mysqli->query($sql);
+$result = $config->query($sql);
 
 $labels = [];
 $jumlahPasien = [];

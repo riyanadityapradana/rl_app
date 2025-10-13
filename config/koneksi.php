@@ -34,6 +34,12 @@ $username2 = getenv('DB_USERNAME2') ?: 'root';
 $password2 = getenv('DB_PASSWORD2') ?: '';
 $database2 = getenv('DB_DATABASE2') ?: 'rl_app_db';
 
+// Konfigurasi database pertama
+$server3   = getenv('DB_SERVER') ?: '192.168.1.4';
+$username3 = getenv('DB_USERNAME') ?: 'root';
+$password3 = getenv('DB_PASSWORD') ?: '';
+$database3 = getenv('DB_DATABASE') ?: 'pendaftaran_pasien';
+
 try {
     // Mengaktifkan mode error reporting untuk mysqli
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
@@ -45,6 +51,10 @@ try {
     // Koneksi ke database kedua
     $mysqli = new mysqli($server2, $username2, $password2, $database2);
     $mysqli->set_charset('utf8');
+
+    // Koneksi ke database kedua
+    $conn = new mysqli($server3, $username3, $password3, $database3);
+    $conn->set_charset('utf8');
 
 } catch (mysqli_sql_exception $e) {
     exit('Database Connection Error: ' . $e->getMessage());

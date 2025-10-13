@@ -75,6 +75,8 @@ foreach ($mapping_kamar as $group => $prefix) {
                 JOIN bangsal b ON k.kd_bangsal = b.kd_bangsal
                 WHERE k.kd_kamar LIKE '$prefix%'
                 AND rp.kd_pj IN ('A09','BPJ','A92')
+                AND rp.stts='Sudah'
+                AND rp.status_bayar='Sudah Bayar'
                 AND ki.tgl_masuk BETWEEN '$start' AND '$end'
                 GROUP BY rp.kd_pj";
         $res = $conn->query($sql);
@@ -137,7 +139,7 @@ foreach ($minggu as $i => $range) {
   <div class="container-fluid">
     <div class="row mb-2">
       <div class="col-sm-6">
-        <h2 style="font-size: 18px; color: black;">REKAP KUNJUNGAN PASIEN HARIAN RAWAT JALAN</h2>
+        <h2 style="font-size: 18px; color: black;">REKAP KUNJUNGAN PASIEN HARIAN RAWAT INAP</h2>
       </div>
       <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
@@ -150,8 +152,7 @@ foreach ($minggu as $i => $range) {
   </div><!-- /.container-fluid -->
 </section>
 <div class="top-bar">
-    <h2>REKAP KUNJUNGAN PASIEN RAWAT INAP</h2>
-    <button class="btn-grafik" onclick="showModal()">Lihat Grafik Bulanan</button>
+    <button class="btn-grafik" onclick="showModal()">Lihat Grafik Harian</button>
 </div>
 <table border="1" cellpadding="5" cellspacing="0">
     <thead>
@@ -206,7 +207,7 @@ foreach ($minggu as $i => $range) {
 <div class="modal-bg" id="modalGrafik">
   <div class="modal-content">
     <span class="modal-close" onclick="closeModal()">&times;</span>
-    <h3>Grafik Kunjungan Pasien per Bulan</h3>
+    <h3>Grafik Kunjungan Pasien Rawat Inap Harian (13 Sep - 11 Okt 2025)</h3>
     <canvas id="chartBulanan" style="min-width:350px; min-height:300px;"></canvas>
   </div>
 </div>
@@ -223,48 +224,143 @@ function closeModal() {
   document.getElementById('modalGrafik').style.display = 'none';
 }
 <?php
-// Ambil data bulan sekarang saja
-$now = new DateTime();
-$start = $now->format('Y-m-01');
-$end = $now->format('Y-m-t');
-$label_bulan = [date('M Y', strtotime($start))];
-// Rekap total per kamar untuk bulan ini
-$data_bulanan = [];
+// Ambil data harian untuk periode yang sesuai (2025-09-13 sampai 2025-10-11)
+$start_date = '2025-09-13';
+$end_date = '2025-10-11';
+$period = new DatePeriod(
+    new DateTime($start_date),
+    new DateInterval('P1D'),
+    new DateTime($end_date . ' +1 day')
+);
+
+$label_harian = [];
+$data_harian = [];
+
+// Inisialisasi array untuk setiap kamar
 foreach ($mapping_kamar as $group => $prefix) {
-    $sql = "SELECT COUNT(*) as jml
-            FROM kamar_inap ki
-            JOIN reg_periksa rp ON ki.no_rawat = rp.no_rawat
-            JOIN kamar k ON ki.kd_kamar = k.kd_kamar
-            JOIN bangsal b ON k.kd_bangsal = b.kd_bangsal
-            WHERE b.nm_bangsal LIKE '$prefix%'
-            AND rp.kd_pj IN ('A09','BPJ','A92')
-            AND ki.tgl_masuk BETWEEN '$start' AND '$end'";
-    $res = $conn->query($sql);
-    $row = $res->fetch_assoc();
-    $data_bulanan[$group] = [(int)$row['jml']];
+    $data_harian[$group] = [];
+}
+
+// Ambil data untuk setiap tanggal
+foreach ($period as $date) {
+    $tanggal = $date->format('Y-m-d');
+    $label_harian[] = $date->format('m/d');
+
+    foreach ($mapping_kamar as $group => $prefix) {
+        $sql = "SELECT COUNT(*) as jml
+                FROM kamar_inap ki
+                JOIN reg_periksa rp ON ki.no_rawat = rp.no_rawat
+                JOIN kamar k ON ki.kd_kamar = k.kd_kamar
+                JOIN bangsal b ON k.kd_bangsal = b.kd_bangsal
+                WHERE k.kd_kamar LIKE '$prefix%'
+                AND rp.kd_pj IN ('A09','BPJ','A92')
+                AND rp.stts='Sudah'
+                AND rp.status_bayar='Sudah Bayar'
+                AND ki.tgl_masuk = '$tanggal'";
+        $res = $conn->query($sql);
+        $row = $res->fetch_assoc();
+        $data_harian[$group][] = (int)$row['jml'];
+    }
 }
 ?>
-const labelBulan = <?php echo json_encode($label_bulan); ?>;
-const dataBulanan = <?php echo json_encode($data_bulanan); ?>;
+const labelHarian = <?php echo json_encode($label_harian); ?>;
+const dataHarian = <?php echo json_encode($data_harian); ?>;
 function renderChartBulanan() {
   const ctx = document.getElementById('chartBulanan').getContext('2d');
-  const datasets = Object.keys(dataBulanan).map((nama, idx) => ({
-    label: nama,
-    data: dataBulanan[nama],
-    backgroundColor: `hsl(${idx*30},70%,60%)`,
-    borderColor: `hsl(${idx*30},70%,40%)`,
-    borderWidth: 1
-  }));
+
+  // Hitung total dari semua kamar untuk setiap tanggal
+  const totalData = labelHarian.map((_, index) =>
+    Object.keys(dataHarian).reduce((sum, kamar) => sum + (dataHarian[kamar][index] || 0), 0)
+  );
+
+  const datasets = [{
+    label: 'Total Kunjungan Rawat Inap',
+    data: totalData,
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    pointBackgroundColor: '#4CAF50',
+    pointBorderColor: '#4CAF50',
+    pointBorderWidth: 2,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    tension: 0.4,
+    fill: false
+  }];
+
   new Chart(ctx, {
-    type: 'bar',
+    type: 'line',
     data: {
-      labels: labelBulan,
+      labels: labelHarian,
       datasets: datasets
     },
     options: {
       responsive: true,
-      plugins: { legend: { position: 'top' } },
-      scales: { x: { stacked: true }, y: { beginAtZero: true, stacked: true } }
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            boxWidth: 12,
+            font: {
+              size: 11
+            }
+          }
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title: function(context) {
+              return 'Tanggal: ' + context[0].label;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.05)'
+          },
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45,
+            font: {
+              size: 10
+            }
+          }
+        },
+        y: {
+          display: true,
+          beginAtZero: true,
+          max: 50,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)',
+            lineWidth: 1
+          },
+          ticks: {
+            stepSize: 5,
+            font: {
+              size: 10
+            }
+          }
+        }
+      },
+      elements: {
+        line: {
+          borderWidth: 3
+        },
+        point: {
+          radius: 4,
+          hoverRadius: 6
+        }
+      },
+      interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false
+      }
     }
   });
 }

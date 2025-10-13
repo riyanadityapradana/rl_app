@@ -23,7 +23,7 @@ GROUP BY
 ORDER BY 
   jumlah DESC";
 
-$result = $mysqli->query($sql);
+$result = $conn->query($sql);
 
 $labels = [];
 $data = [];
