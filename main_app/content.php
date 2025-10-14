@@ -108,6 +108,9 @@ else if ($page == "rekap_px_usia_ralan"){
 else if ($page == "rekap_pasien_ranap_kabupaten"){
   require_once("page/rekap-kunjungan-pasien/rawat-inap/rekap_pasien_ranap_kabupaten.php");
 }
+else if ($page == "rekap_pasien_ralan_kabupaten"){
+  require_once("page/rekap-kunjungan-pasien/rawat-jalan/rekap_pasien_ralan_kabupaten.php");
+}
 
 
 // Picare

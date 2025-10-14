@@ -7,38 +7,39 @@ $conn = new mysqli($host, $user, $pass, $db);
 if ($conn->connect_error) {
         die('Koneksi gagal: ' . $conn->connect_error);
 }
+
 $bulan = isset($_POST['bulan']) ? $_POST['bulan'] : date('m');
 $tahun = isset($_POST['tahun']) ? $_POST['tahun'] : date('Y');
 
 // Validasi input
 if ((int)$bulan < 1 || (int)$bulan > 12) $bulan = date('m');
 if ((int)$tahun < 2000 || (int)$tahun > 2100) $tahun = date('Y');
+
 $sql = "SELECT kab.nm_kab AS kabupaten,
         SUM(CASE WHEN rp.kd_pj = 'A09' THEN 1 ELSE 0 END) AS Umum,
         SUM(CASE WHEN rp.kd_pj = 'BPJ' THEN 1 ELSE 0 END) AS BPJS,
-        SUM(CASE WHEN rp.kd_pj = 'A92' THEN 1 ELSE 0 END) AS Asuransi
+        SUM(CASE WHEN rp.kd_pj = 'A92' THEN 1 ELSE 0 END) AS Asuransi,
+        COUNT(*) AS Total
 FROM reg_periksa rp
 JOIN pasien p      ON p.no_rkm_medis = rp.no_rkm_medis
 JOIN penjab pj     ON pj.kd_pj = rp.kd_pj
-JOIN kamar_inap ki ON ki.no_rawat = rp.no_rawat
-JOIN kamar k       ON k.kd_kamar = ki.kd_kamar
-JOIN bangsal b     ON b.kd_bangsal = k.kd_bangsal
+JOIN poliklinik pl ON pl.kd_poli = rp.kd_poli
 JOIN kabupaten kab ON kab.kd_kab = p.kd_kab
-JOIN kecamatan kec ON kec.kd_kec = p.kd_kec
-JOIN kelurahan kel ON kel.kd_kel = p.kd_kel
 WHERE MONTH(rp.tgl_registrasi) = $bulan
         AND YEAR(rp.tgl_registrasi) = $tahun
-        AND rp.status_lanjut = 'Ranap'
+        AND rp.status_lanjut = 'Ralan'
         AND rp.stts <> 'Batal'
-        AND ki.stts_pulang <> 'Pindah Kamar'
+        AND pl.nm_poli NOT IN ('Tinggal Rawat Inap', 'Unit Laboratorium', 'OBGYN', 'PONEK', 'TEST', 'Unit Gizi', 'Poli Vaksin', 'UGD', 'HEMODIALISA')
         AND kab.nm_kab IN ('BANJARMASIN', 'BANJARBARU', 'BANJAR')
         AND rp.kd_pj IN ('A09','A92','BPJ')
-GROUP BY kabupaten
-ORDER BY FIELD(kabupaten, 'BANJARMASIN', 'BANJARBARU', 'BANJAR')";
+GROUP BY kab.nm_kab
+ORDER BY FIELD(kab.nm_kab, 'BANJARMASIN', 'BANJARBARU', 'BANJAR')";
+
 $result = $conn->query($sql);
 $total_umum = 0;
 $total_bpjs = 0;
 $total_asuransi = 0;
+$total_pasien = 0;
 $labels = [];
 $umum = [];
 $bpjs = [];
@@ -56,13 +57,13 @@ $bulanList = [
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1>REKAP PASIEN RAWAT INAP PER KABUPATEN</h1>
+                <h1>REKAP PASIEN RAWAT JALAN PER KABUPATEN</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="main_app.php?page=beranda">Home</a></li>
+                    <li class="breadcrumb-item"><a href="main_staff.php?unit=beranda">Home</a></li>
+                    <li class="breadcrumb-item"><a href="main_app.php?page=rekap_pasien_ranap_kabupaten">Rkp Pasien Ranap Perkabupaten</a></li>
                     <li class="breadcrumb-item active">Rekap Kunjungan</li>
-                    <li class="breadcrumb-item"><a href="main_app.php?page=rekap_pasien_ralan_kabupaten">Rkp Pasien Ralan Perkabupaten</a></li>
                 </ol>
             </div>
         </div>
@@ -120,11 +121,12 @@ $bulanList = [
                         <?php if ($result && $result->num_rows > 0): ?>
                             <?php
                             $result->data_seek(0);
-                            $total_umum = $total_bpjs = $total_asuransi = 0;
+                            $total_umum = $total_bpjs = $total_asuransi = $total_pasien = 0;
                             while ($row = $result->fetch_assoc()) {
                                 $total_umum += $row['Umum'];
                                 $total_bpjs += $row['BPJS'];
                                 $total_asuransi += $row['Asuransi'];
+                                $total_pasien += $row['Total'];
                             }
                             ?>
                             <table class="table table-bordered">
@@ -146,7 +148,7 @@ $bulanList = [
                                 </tr>
                                 <tr style="background:#ffc107; color:#212529;">
                                     <td><strong>TOTAL PASIEN</strong></td>
-                                    <td align="center"><strong><?php echo $total_umum + $total_bpjs + $total_asuransi; ?></strong></td>
+                                    <td align="center"><strong><?php echo $total_pasien; ?></strong></td>
                                 </tr>
                             </table>
                         <?php endif; ?>
@@ -159,9 +161,9 @@ $bulanList = [
             <div class="col-md-12">
                 <div class="card card-danger">
                     <div class="card-header" style="background:#dc3545; color:white;">
-                        <h3 class="card-title">DATA PASIEN RAWAT INAP</h3>
+                        <h3 class="card-title">DATA PASIEN RAWAT JALAN</h3>
                     </div>
-                    <div class="card-body" style="background:rgb(203, 212, 212); min-height: 400px;">
+                    <div class="card-body" style="background:rgb(203, 212, 212);">
                         <table id="tabelPasien" class="table table-bordered table-striped" style="width:100%;">
                             <thead style="background:#007bff; color:white;">
                                 <tr>
@@ -186,26 +188,25 @@ $bulanList = [
 
                                 if ($result && $result->num_rows > 0) {
                                     while ($row = $result->fetch_assoc()) {
-                                        $total_row = $row['Umum'] + $row['BPJS'] + $row['Asuransi'];
                                         echo '<tr>';
                                         echo '<td align="center">' . $no++ . '</td>';
                                         echo '<td>' . htmlspecialchars($row['kabupaten']) . '</td>';
                                         echo '<td align="center">' . $row['Umum'] . '</td>';
                                         echo '<td align="center">' . $row['BPJS'] . '</td>';
                                         echo '<td align="center">' . $row['Asuransi'] . '</td>';
-                                        echo '<td align="center">' . $total_row . '</td>';
+                                        echo '<td align="center">' . $row['Total'] . '</td>';
                                         echo '</tr>';
 
                                         $total_umum += $row['Umum'];
                                         $total_bpjs += $row['BPJS'];
                                         $total_asuransi += $row['Asuransi'];
-                                        $total_pasien += $total_row;
+                                        $total_pasien += $row['Total'];
 
                                         $labels[] = $row['kabupaten'];
                                         $umum[] = $row['Umum'];
                                         $bpjs[] = $row['BPJS'];
                                         $asuransi[] = $row['Asuransi'];
-                                        $total_data[] = $total_row;
+                                        $total_data[] = $row['Total'];
                                     }
                                     // Baris total
                                     echo '<tr style="background: #ffc107; color: #212529; font-weight: bold;">';
@@ -224,6 +225,10 @@ $bulanList = [
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</section>
+
 <!-- DataTables JS & CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -238,16 +243,13 @@ $(document).ready(function() {
         lengthChange: false,
         pageLength: 10,
         language: {
-            search: 'Search:',
+            search: 'Cari:',
             emptyTable: 'Tidak ada data',
-            paginate: { previous: 'Previous', next: 'Next' }
+            paginate: { previous: 'Sebelumnya', next: 'Selanjutnya' }
         }
     });
 });
 </script>
-        </div>
-    </div>
-</section>
 
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -291,7 +293,7 @@ const chart = new Chart(ctx, {
                 responsive: true,
                 plugins: {
                         legend: { position: 'top' },
-                        title: { display: true, text: 'Grafik Jumlah Pasien Rawat Inap per Kabupaten' }
+                        title: { display: true, text: 'Grafik Jumlah Pasien Rawat Jalan per Kabupaten' }
                 },
                 scales: {
                         y: {
