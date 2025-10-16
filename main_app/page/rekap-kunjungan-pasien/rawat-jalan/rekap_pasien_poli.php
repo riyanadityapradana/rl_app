@@ -38,11 +38,21 @@ $penjamin = [
     'BPJ' => 'BPJS',
     'A92' => 'ASURANSI',
 ];
-// Ambil bulan dan tahun sekarang
-$bulan = date('n'); // 1-12
-$tahun = date('Y'); // 4 digit
-// Cari jumlah hari dalam bulan ini
-$jumlah_hari = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
+// Ambil bulan dan tahun dari POST atau default sekarang
+$bulan = isset($_POST['bulan']) ? $_POST['bulan'] : date('m');
+$tahun = isset($_POST['tahun']) ? $_POST['tahun'] : date('Y');
+
+// Validasi input
+if ((int)$bulan < 1 || (int)$bulan > 12) $bulan = date('m');
+if ((int)$tahun < 2000 || (int)$tahun > 2100) $tahun = date('Y');
+// List bulan untuk dropdown
+$bulanList = [
+    '01'=>'January','02'=>'February','03'=>'March','04'=>'April','05'=>'May','06'=>'June',
+    '07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'
+];
+
+// Cari jumlah hari dalam bulan yang dipilih
+$jumlah_hari = cal_days_in_month(CAL_GREGORIAN, (int)$bulan, $tahun);
 
 // Tentukan range minggu (bisa diubah manual atau otomatis)
 $minggu = [];
@@ -91,7 +101,7 @@ foreach ($mapping_poli as $nama_poli => $list_kd_poli) {
         $start = $range[0];
         $end   = $range[1];
         if (count($list_kd_poli) === 0) continue;
-        $sql = "SELECT kd_pj, COUNT(*) as jml FROM reg_periksa WHERE tgl_registrasi BETWEEN '$start' AND '$end' AND kd_poli IN ('" . implode("','", $list_kd_poli) . "') AND kd_pj IN ('A09','BPJ','A92') AND stts='Sudah' AND status_bayar='Sudah Bayar' AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%') GROUP BY kd_pj";
+        $sql = "SELECT kd_pj, COUNT(*) as jml FROM reg_periksa WHERE MONTH(tgl_registrasi) = " . (int)$bulan . " AND YEAR(tgl_registrasi) = " . (int)$tahun . " AND kd_poli IN ('" . implode("','", $list_kd_poli) . "') AND kd_pj IN ('A09','BPJ','A92') AND stts='Sudah' AND status_bayar='Sudah Bayar' AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%') GROUP BY kd_pj";
         $res = $conn->query($sql);
         while ($row = $res->fetch_assoc()) {
             $rekap[$nama_poli][$i][$row['kd_pj']] = (int)$row['jml'];
@@ -150,18 +160,46 @@ foreach ($minggu as $i => $range) {
       </div>
       <div class="col-sm-6">
         <ol class="breadcrumb float-sm-right">
-          <li class="breadcrumb-item"><a href="dashboard_staff.php?page=beranda">Home</a></li>
+          <li class="breadcrumb-item"><a href="dashboard_staff.php?unit=beranda">Home</a></li>
           <li class="breadcrumb-item active">Rekap Kunjungan Pasien</li>
-          <li class="breadcrumb-item"><a href="main_app.php?page=jum_px_ralan">Jumlah Pasien Ralan</a></li>
         </ol>
       </div>
     </div>
   </div><!-- /.container-fluid -->
 </section>
 <section class="content">
-<div class="top-bar">
-    <button class="btn-grafik" onclick="showModal()">Lihat Grafik Harian</button>
-</div>
+    <!-- Filter Section -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header" style="background:#007bff; color:white;">
+                    <h3 class="card-title">Filter Data</h3>
+                </div>
+                <div class="card-body">
+                    <div class="card-tools" style="float: left; text-align: left;">
+                        <form method="post" class="mb-3" style="display:flex;align-items:center;gap:10px;">
+                            <label for="bulan" style="margin-bottom:0;">Bulan:</label>
+                            <select name="bulan" id="bulan" class="form-control" style="width:auto;display:inline-block;">
+                                <?php
+                                foreach($bulanList as $val=>$label) {
+                                    $selected = ($bulan == $val || $bulan == ltrim($val, '0')) ? 'selected' : '';
+                                    echo '<option value="'.$val.'" '.$selected.'>'.$label.'</option>';
+                                }
+                                ?>
+                            </select>
+                            <label for="tahun" style="margin-bottom:0;">Tahun:</label>
+                            <input type="number" name="tahun" id="tahun" class="form-control" value="<?php echo $tahun; ?>" style="width:90px;display:inline-block;">
+                            <button type="submit" class="btn btn-primary">Tampilkan Data</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="top-bar">
+        <button class="btn-grafik" onclick="showModal()">Lihat Grafik Harian</button>
+    </div>
 <table>
     <tr>
         <th rowspan="2">POLIKLINIK</th>
@@ -210,7 +248,7 @@ foreach ($minggu as $i => $range) {
 <div class="modal-bg" id="modalGrafik">
   <div class="modal-content">
     <span class="modal-close" onclick="closeModal()">&times;</span>
-    <h3>Grafik Kunjungan Pasien Harian (13 Sep - 11 Okt 2025)</h3>
+    <h3>Grafik Kunjungan Pasien Harian (<?php echo $bulanList[str_pad($bulan, 2, '0', STR_PAD_LEFT)] . ' ' . $tahun; ?>)</h3>
     <canvas id="chartBulanan" style="min-width:350px; min-height:300px;"></canvas>
   </div>
 </div>
@@ -228,9 +266,9 @@ function closeModal() {
 }
 // Data grafik harian dari PHP
 <?php
-// Ambil data harian untuk periode yang sesuai dengan gambar (2025-09-13 sampai 2025-10-11)
-$start_date = '2025-09-13';
-$end_date = '2025-10-11';
+// Ambil data harian untuk bulan dan tahun yang dipilih
+$start_date = sprintf('%04d-%02d-01', $tahun, $bulan);
+$end_date = sprintf('%04d-%02d-%02d', $tahun, $bulan, $jumlah_hari);
 $period = new DatePeriod(
     new DateTime($start_date),
     new DateInterval('P1D'),
@@ -256,7 +294,7 @@ foreach ($period as $date) {
             continue;
         }
 
-        $sql = "SELECT COUNT(*) as jml FROM reg_periksa WHERE tgl_registrasi = '$tanggal' AND kd_poli IN ('" . implode("','", $list_kd_poli) . "') AND kd_pj IN ('A09','BPJ','A92') AND stts='Sudah' AND status_bayar='Sudah Bayar' AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%')";
+        $sql = "SELECT COUNT(*) as jml FROM reg_periksa WHERE DATE(tgl_registrasi) = '$tanggal' AND kd_poli IN ('" . implode("','", $list_kd_poli) . "') AND kd_pj IN ('A09','BPJ','A92') AND stts='Sudah' AND status_bayar='Sudah Bayar' AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%')";
         $res = $conn->query($sql);
         $row = $res->fetch_assoc();
         $data_harian[$nama_poli][] = (int)$row['jml'];
