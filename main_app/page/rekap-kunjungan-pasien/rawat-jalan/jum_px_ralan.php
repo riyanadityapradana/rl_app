@@ -22,19 +22,43 @@ if ((int)$tahun < 2000 || (int)$tahun > 2100) $tahun = date('Y');
 $query_data = "
 SELECT
     DATE(r.tgl_registrasi) AS tanggal,
-    COUNT(DISTINCT r.no_rkm_medis) AS jumlah_pasien_unik,
+    COUNT(r.no_rawat) AS jumlah_kunjungan,
     DAY(r.tgl_registrasi) AS hari
 FROM reg_periksa r
 JOIN pasien p ON r.no_rkm_medis = p.no_rkm_medis
+JOIN poliklinik pl ON r.kd_poli = pl.kd_poli
 WHERE r.status_lanjut = 'Ralan'
-AND r.stts = 'Sudah'
+AND r.status_bayar = 'Sudah Bayar'
   AND p.nm_pasien NOT LIKE '%TEST%'
   AND p.nm_pasien NOT LIKE '%Tes%'
   AND p.nm_pasien NOT LIKE '%Coba%'
+  AND (pl.nm_poli LIKE '%Poli%' OR pl.nm_poli LIKE '%Poliklinik%')
+  AND pl.nm_poli NOT LIKE '%Poli Vaksin%'
   AND MONTH(r.tgl_registrasi) = '$bulan'
   AND YEAR(r.tgl_registrasi) = '$tahun'
 GROUP BY DATE(r.tgl_registrasi)
 ORDER BY tanggal";
+
+// Query untuk mengambil data per poliklinik
+$query_poli = "
+SELECT
+    pl.nm_poli,
+    COUNT(DISTINCT r.no_rkm_medis) AS jumlah_pasien_unik,
+    COUNT(r.no_rawat) AS jumlah_kunjungan
+FROM reg_periksa r
+JOIN pasien p ON r.no_rkm_medis = p.no_rkm_medis
+JOIN poliklinik pl ON r.kd_poli = pl.kd_poli
+WHERE r.status_lanjut = 'Ralan'
+AND r.status_bayar = 'Sudah Bayar'
+  AND p.nm_pasien NOT LIKE '%TEST%'
+  AND p.nm_pasien NOT LIKE '%Tes%'
+  AND p.nm_pasien NOT LIKE '%Coba%'
+  AND (pl.nm_poli LIKE '%Poli%' OR pl.nm_poli LIKE '%Poliklinik%')
+  AND pl.nm_poli NOT LIKE '%Poli Vaksin%'
+  AND MONTH(r.tgl_registrasi) = '$bulan'
+  AND YEAR(r.tgl_registrasi) = '$tahun'
+GROUP BY pl.kd_poli, pl.nm_poli
+ORDER BY jumlah_kunjungan DESC";
 
 $result_data = $conn->query($query_data);
 
@@ -43,21 +67,40 @@ if (!$result_data) {
     die('<div class="alert alert-danger">Query error: ' . $conn->error . '</div>');
 }
 
+// Eksekusi query untuk data poliklinik
+$result_poli = $conn->query($query_poli);
+if (!$result_poli) {
+    die('<div class="alert alert-danger">Query poli error: ' . $conn->error . '</div>');
+}
+
+// Hitung total kunjungan dari semua poli
+$total_pasien_poli = 0;
+$data_poli_grafik = [];
+$labels_poli_grafik = [];
+
+if ($result_poli->num_rows > 0) {
+    while($row_poli = $result_poli->fetch_assoc()) {
+        $labels_poli_grafik[] = $row_poli['nm_poli'];
+        $data_poli_grafik[] = (int)$row_poli['jumlah_kunjungan'];
+        $total_pasien_poli += (int)$row_poli['jumlah_kunjungan'];
+    }
+}
+
 // Ambil data untuk grafik dan tabel
 $data_grafik = [];
 $labels_grafik = [];
 $total_pasien = 0;
-$max_pasien = 0;
+$max_kunjungan = 0;
 
 if ($result_data->num_rows > 0) {
     while($row = $result_data->fetch_assoc()) {
         $tanggal_format = date('d M', strtotime($row['tanggal']));
         $labels_grafik[] = $tanggal_format;
-        $jumlah = (int)$row['jumlah_pasien_unik'];
+        $jumlah = (int)$row['jumlah_kunjungan'];
         $data_grafik[] = $jumlah;
         $total_pasien += $jumlah;
-        if ($jumlah > $max_pasien) {
-            $max_pasien = $jumlah;
+        if ($jumlah > $max_kunjungan) {
+            $max_kunjungan = $jumlah;
         }
     }
 }
@@ -68,14 +111,17 @@ if (empty($labels_grafik)) {
     $data_grafik = [0];
 }
 
-// Query untuk total pasien unik dalam periode bulan/tahun yang dipilih
+// Query untuk total kunjungan dalam periode bulan/tahun yang dipilih
 $query_total = "
 SELECT
-    COUNT(DISTINCT r.no_rkm_medis) AS jumlah_pasien_unik
+    COUNT(r.no_rawat) AS jumlah_kunjungan
 FROM reg_periksa r
 JOIN pasien p ON r.no_rkm_medis = p.no_rkm_medis
+JOIN poliklinik pl ON r.kd_poli = pl.kd_poli
 WHERE r.status_lanjut = 'Ralan'
-AND r.stts = 'Sudah'
+AND r.status_bayar = 'Sudah Bayar'
+AND (pl.nm_poli LIKE '%Poli%' OR pl.nm_poli LIKE '%Poliklinik%')
+  AND pl.nm_poli NOT LIKE '%Poli Vaksin%'
   AND p.nm_pasien NOT LIKE '%TEST%'
   AND p.nm_pasien NOT LIKE '%Tes%'
   AND p.nm_pasien NOT LIKE '%Coba%'
@@ -83,12 +129,12 @@ AND r.stts = 'Sudah'
   AND YEAR(r.tgl_registrasi) = '$tahun'";
 
 $result_total = $conn->query($query_total);
-$total_unik = 0;
+$total_kunjungan = 0;
 if ($result_total && $row_total = $result_total->fetch_assoc()) {
-    $total_unik = (int)$row_total['jumlah_pasien_unik'];
+    $total_kunjungan = (int)$row_total['jumlah_kunjungan'];
 }
 
-// Hitung rata-rata pasien per hari
+// Hitung rata-rata kunjungan per hari
 $rata_rata = count($data_grafik) > 0 ? round($total_pasien / count($data_grafik), 1) : 0;
 
 // List bulan untuk dropdown
@@ -102,7 +148,7 @@ $bulanList = [
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1>JUMLAH PASIEN RAWAT JALAN</h1>
+                <h1 style="font-size: 22px; color: red;">JUMLAH (HARIAN) PASIEN RAWAT JALAN UNTUK SEMUA POLI</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
@@ -141,15 +187,16 @@ $bulanList = [
                     </div>
 
                     <div class="card-body">
+
                         <div class="row">
                             <!-- Panel Kiri - Tabel -->
                             <div class="col-md-6">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h4 class="card-title">Data Harian Pasien Rawat Jalan</h4>
+                                        <h4 class="card-title">Data Pasien Rawat Jalan (Harian)</h4>
                                         <div class="card-tools">
-                                            <span class="badge badge-info">Total Unik: <?php echo number_format($total_unik); ?></span>
-                                            <span class="badge badge-success">Total Kunjungan: <?php echo number_format($total_pasien); ?></span>
+                                            <span class="badge badge-info">Total Kunjungan: <?php echo number_format($total_kunjungan); ?></span>
+                                            <span class="badge badge-success">Total Kunjungan Harian: <?php echo number_format($total_pasien); ?></span>
                                             <span class="badge badge-warning">Rata-rata: <?php echo number_format($rata_rata, 1); ?>/hari</span>
                                         </div>
                                     </div>
@@ -160,7 +207,7 @@ $bulanList = [
                                                 <tr>
                                                     <th width="15%" class="text-center">Tanggal</th>
                                                     <th width="15%" class="text-center">Hari</th>
-                                                    <th width="20%" class="text-center">Jumlah Pasien</th>
+                                                    <th width="20%" class="text-center">Jumlah Kunjungan</th>
                                                     <th width="15%" class="text-center">Persentase</th>
                                                     <th width="15%" class="text-center">Status</th>
                                                     <th width="20%" class="text-center">Keterangan</th>
@@ -174,14 +221,14 @@ $bulanList = [
                                                     while($row = $result_data->fetch_assoc()):
                                                         $tanggal = $row['tanggal'];
                                                         $hari = date('l', strtotime($tanggal));
-                                                        $jumlah = (int)$row['jumlah_pasien_unik'];
-                                                        $persentase = $max_pasien > 0 ? round(($jumlah / $max_pasien) * 100, 1) : 0;
+                                                        $jumlah = (int)$row['jumlah_kunjungan'];
+                                                        $persentase = $max_kunjungan > 0 ? round(($jumlah / $max_kunjungan) * 100, 1) : 0;
 
-                                                        // Tentukan status berdasarkan jumlah pasien
-                                                        if ($jumlah >= $max_pasien * 0.8) {
+                                                        // Tentukan status berdasarkan jumlah kunjungan
+                                                        if ($jumlah >= $max_kunjungan * 0.8) {
                                                             $status = '<span class="badge badge-success">Tinggi</span>';
                                                             $keterangan = 'Puncak kunjungan';
-                                                        } elseif ($jumlah >= $max_pasien * 0.5) {
+                                                        } elseif ($jumlah >= $max_kunjungan * 0.5) {
                                                             $status = '<span class="badge badge-warning">Sedang</span>';
                                                             $keterangan = 'Normal';
                                                         } else {
@@ -235,6 +282,80 @@ $bulanList = [
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Baris untuk Tabel dan Grafik Poliklinik -->
+                        <div class="row mt-4">
+                            <!-- Panel Kiri - Tabel Poliklinik -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title">Data Kunjungan per Poliklinik Berdasarkan Bulan <?php echo date('F Y', strtotime("$tahun-$bulan-01")); ?></h4>
+                                        <div class="card-tools">
+                                            <span class="badge badge-primary">Total Poli: <?php echo count($labels_poli_grafik); ?></span>
+                                            <span class="badge badge-info">Total Kunjungan: <?php echo number_format($total_pasien_poli); ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body table-responsive p-0" style="max-height: 300px; overflow-y: auto;">
+                                        <?php if (count($data_poli_grafik) > 0): ?>
+                                        <table class="table table-striped table-bordered">
+                                            <thead class="sticky-top" style="background-color: #28a745; color: white;">
+                                                <tr>
+                                                    <th width="10%" class="text-center">No</th>
+                                                    <th width="50%" class="text-center">Nama Poliklinik</th>
+                                                    <th width="20%" class="text-center">Jumlah Kunjungan</th>
+                                                    <th width="20%" class="text-center">Persentase</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php
+                                                $result_poli->data_seek(0); // Reset pointer hasil query
+                                                $no = 1;
+                                                while($row_poli = $result_poli->fetch_assoc()):
+                                                    $nm_poli = $row_poli['nm_poli'];
+                                                    $jml_kunjungan = (int)$row_poli['jumlah_kunjungan'];
+                                                    $persentase = $total_pasien_poli > 0 ? round(($jml_kunjungan / $total_pasien_poli) * 100, 1) : 0;
+                                                ?>
+                                                <tr>
+                                                    <td class="text-center"><?php echo $no; ?></td>
+                                                    <td><?php echo htmlspecialchars($nm_poli); ?></td>
+                                                    <td class="text-center"><strong><?php echo number_format($jml_kunjungan); ?></strong></td>
+                                                    <td class="text-center">
+                                                        <span class="badge <?php echo $persentase >= 20 ? 'badge-success' : ($persentase >= 10 ? 'badge-warning' : 'badge-secondary'); ?>">
+                                                            <?php echo $persentase; ?>%
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                <?php
+                                                    $no++;
+                                                endwhile;
+                                                ?>
+                                            </tbody>
+                                        </table>
+                                        <?php else: ?>
+                                        <div class="p-3 text-center text-muted">
+                                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                            <p>Tidak ada data poliklinik untuk periode ini.</p>
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel Kanan - Grafik Poliklinik -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title">Grafik Distribusi Kunjungan per Poliklinik</h4>
+                                        <div class="card-tools">
+                                            <small class="text-muted"><?php echo date('F Y', strtotime("$tahun-$bulan-01")); ?></small>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="chartPoli" width="400" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -253,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: <?php echo json_encode($labels_grafik); ?>,
             datasets: [{
-                label: 'Jumlah Pasien per Hari',
+                label: 'Jumlah Kunjungan per Hari',
                 data: <?php echo json_encode($data_grafik); ?>,
                 backgroundColor: 'rgba(40, 167, 69, 0.1)',
                 borderColor: 'rgba(40, 167, 69, 1)',
@@ -285,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     intersect: false,
                     callbacks: {
                         label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' pasien';
+                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' kunjungan';
                         }
                     }
                 }
@@ -315,6 +436,80 @@ document.addEventListener('DOMContentLoaded', function() {
                         },
                         callback: function(value) {
                             return value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'nearest'
+            }
+        }
+    });
+
+    // Chart untuk data poliklinik (Bar Chart horizontal)
+    const ctxPoli = document.getElementById('chartPoli').getContext('2d');
+
+    new Chart(ctxPoli, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode($labels_poli_grafik); ?>,
+            datasets: [{
+                label: 'Jumlah Kunjungan per Poli',
+                data: <?php echo json_encode($data_poli_grafik); ?>,
+                backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.x.toLocaleString() + ' kunjungan';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        font: {
+                            size: 10
+                        },
+                        callback: function(value) {
+                            return value.toLocaleString();
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 10
                         }
                     }
                 }

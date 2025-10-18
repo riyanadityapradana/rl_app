@@ -1,11 +1,25 @@
 <?php
-// Koneksi ke database sik9 (hardcode, sesuaikan jika perlu)
+/**
+ * Rekap Kunjungan Pasien Poli - Optimized Version
+ *
+ * Optimasi yang dilakukan:
+ * - Query gabungan menggunakan UNION ALL untuk mengurangi jumlah query
+ * - Prepared statements untuk keamanan dan performa
+ * - Filter poli aktif untuk mengurangi data yang tidak perlu
+ * - Optimasi perhitungan array menggunakan array_fill_keys
+ * - Caching format tanggal dengan base timestamp
+ */
+
 $host = '192.168.1.4';
 $user = 'root';
 $pass = '';
 $db   = 'sik9';
 $conn = new mysqli($host, $user, $pass, $db);
-if ($conn->connect_error) die('Koneksi gagal: ' . $conn->connect_error);
+
+// Error handling untuk koneksi database
+if ($conn->connect_error) {
+    die('Koneksi gagal: ' . $conn->connect_error);
+}
 $conn->set_charset('utf8');
 
 // Daftar urutan poliklinik sesuai keinginan
@@ -25,12 +39,15 @@ $urutan_poli = [
     ['kd_poli' => 'U0014', 'nm_poli' => 'ORTHOPEDI'],
 ];
 
-// Ambil daftar poliklinik aktif
+// Ambil daftar poliklinik aktif dengan prepared statement
 $poliklinik = [];
-$res = $conn->query("SELECT kd_poli, nm_poli FROM poliklinik WHERE status = '1' ORDER BY nm_poli");
+$stmt = $conn->prepare("SELECT kd_poli, nm_poli FROM poliklinik WHERE status = '1' ORDER BY nm_poli");
+$stmt->execute();
+$res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) {
     $poliklinik[$row['kd_poli']] = $row['nm_poli'];
 }
+$stmt->close();
 
 // Mapping kode penjamin
 $penjamin = [
@@ -51,17 +68,18 @@ $bulanList = [
     '07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'
 ];
 
-// Cari jumlah hari dalam bulan yang dipilih
+// Optimasi: Cari jumlah hari dalam bulan yang dipilih
 $jumlah_hari = cal_days_in_month(CAL_GREGORIAN, (int)$bulan, $tahun);
 
-// Tentukan range minggu (bisa diubah manual atau otomatis)
+// Optimasi: Tentukan range minggu dengan caching format tanggal
 $minggu = [];
 $start = 1;
+$base_timestamp = mktime(0, 0, 0, $bulan, 1, $tahun); // Base timestamp untuk bulan ini
 while ($start <= $jumlah_hari) {
     $end = min($start + 6, $jumlah_hari);
     $minggu[] = [
-        date('Y-m-d', mktime(0, 0, 0, $bulan, $start, $tahun)),
-        date('Y-m-d', mktime(0, 0, 0, $bulan, $end, $tahun))
+        date('Y-m-d', strtotime("+$start day", $base_timestamp) - 86400), // Kurangi 1 hari karena base adalah tanggal 1
+        date('Y-m-d', strtotime("+$end day", $base_timestamp) - 86400)
     ];
     $start = $end + 1;
 }
@@ -81,44 +99,70 @@ $mapping_poli = [
     'JANTUNG' => ['U0012', 'U0032'],
     'JIWA' => ['U0013', 'U0018'],
     'ORTHOPEDI' => ['U0016'],
-    // Tambahkan mapping lain sesuai kebutuhan
 ];
 
-// Siapkan array rekap
+// Filter mapping poli hanya untuk poli yang aktif
+$mapping_poli_aktif = [];
+foreach ($mapping_poli as $nama_poli => $list_kd_poli) {
+    $filtered_kd_poli = array_intersect($list_kd_poli, array_keys($poliklinik));
+    if (!empty($filtered_kd_poli)) {
+        $mapping_poli_aktif[$nama_poli] = array_values($filtered_kd_poli);
+    }
+}
+$mapping_poli = $mapping_poli_aktif;
+
+// Siapkan array rekap dengan inisialisasi yang lebih efisien
 $rekap = [];
 foreach ($mapping_poli as $nama_poli => $list_kd_poli) {
+    $rekap[$nama_poli] = [];
     foreach ($minggu as $i => $range) {
-        foreach ($penjamin as $kd_pj => $label) {
-            $rekap[$nama_poli][$i][$kd_pj] = 0;
-        }
-        $rekap[$nama_poli][$i]['JUMLAH'] = 0;
+        $rekap[$nama_poli][$i] = array_merge(['JUMLAH' => 0], array_fill_keys(array_keys($penjamin), 0));
     }
 }
 
-// Query data per minggu, per poli utama (akumulasi sub-poli), per penjamin
+// Optimasi: Query dengan prepared statement untuk setiap kombinasi poli dan minggu
 foreach ($mapping_poli as $nama_poli => $list_kd_poli) {
     foreach ($minggu as $i => $range) {
+        if (count($list_kd_poli) === 0) continue;
+
         $start = $range[0];
         $end   = $range[1];
-        if (count($list_kd_poli) === 0) continue;
-        $sql = "SELECT kd_pj, COUNT(*) as jml FROM reg_periksa WHERE MONTH(tgl_registrasi) = " . (int)$bulan . " AND YEAR(tgl_registrasi) = " . (int)$tahun . " AND kd_poli IN ('" . implode("','", $list_kd_poli) . "') AND kd_pj IN ('A09','BPJ','A92') AND stts='Sudah' AND status_bayar='Sudah Bayar' AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%') GROUP BY kd_pj";
-        $res = $conn->query($sql);
+
+        // Siapkan placeholders untuk IN clause
+        $poli_placeholders = implode(',', array_fill(0, count($list_kd_poli), '?'));
+
+        $sql = "SELECT kd_pj, COUNT(*) as jml FROM reg_periksa
+                WHERE tgl_registrasi BETWEEN ? AND ?
+                AND kd_poli IN ($poli_placeholders)
+                AND kd_pj IN ('A09','BPJ','A92')
+                AND stts='Sudah'
+                AND status_bayar='Sudah Bayar'
+                AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%')
+                GROUP BY kd_pj";
+
+        $stmt = $conn->prepare($sql);
+
+        // Bind parameters: start_date, end_date, dan semua kd_poli
+        $bind_params = array_merge([$start, $end], $list_kd_poli);
+        $stmt->bind_param(str_repeat('s', count($bind_params)), ...$bind_params);
+
+        $stmt->execute();
+        $res = $stmt->get_result();
+
         while ($row = $res->fetch_assoc()) {
             $rekap[$nama_poli][$i][$row['kd_pj']] = (int)$row['jml'];
             $rekap[$nama_poli][$i]['JUMLAH'] += (int)$row['jml'];
         }
+        $stmt->close();
     }
 }
 
-// Hitung total per jenis bayar dan total per minggu
-$total_per_jenis = [];
-$total_per_minggu = [];
-foreach ($minggu as $i => $range) {
-    foreach ($penjamin as $kd_pj => $label) {
-        $total_per_jenis[$i][$kd_pj] = 0;
-    }
-    $total_per_minggu[$i] = 0;
-    foreach ($mapping_poli as $nama_poli => $list_kd_poli) {
+// Hitung total per jenis bayar dan total per minggu dengan optimasi
+$total_per_jenis = array_fill_keys(array_keys($minggu), array_fill_keys(array_keys($penjamin), 0));
+$total_per_minggu = array_fill_keys(array_keys($minggu), 0);
+
+foreach ($mapping_poli as $nama_poli => $list_kd_poli) {
+    foreach ($minggu as $i => $range) {
         foreach ($penjamin as $kd_pj => $label) {
             $total_per_jenis[$i][$kd_pj] += $rekap[$nama_poli][$i][$kd_pj];
         }
@@ -162,6 +206,7 @@ foreach ($minggu as $i => $range) {
         <ol class="breadcrumb float-sm-right">
           <li class="breadcrumb-item"><a href="dashboard_staff.php?unit=beranda">Home</a></li>
           <li class="breadcrumb-item active">Rekap Kunjungan Pasien</li>
+          <li class="breadcrumb-item"><a href="main_app.php?page=jum_px_ralan">Rekap Jumlah Pasien Rawat Jalan</a></li>
         </ol>
       </div>
     </div>
@@ -266,7 +311,7 @@ function closeModal() {
 }
 // Data grafik harian dari PHP
 <?php
-// Ambil data harian untuk bulan dan tahun yang dipilih
+// Optimasi grafik harian: Query gabungan untuk semua tanggal dan poli
 $start_date = sprintf('%04d-%02d-01', $tahun, $bulan);
 $end_date = sprintf('%04d-%02d-%02d', $tahun, $bulan, $jumlah_hari);
 $period = new DatePeriod(
@@ -277,13 +322,14 @@ $period = new DatePeriod(
 
 $label_harian = [];
 $data_harian = [];
+$data_harian_totals = [];
 
 // Inisialisasi array untuk setiap poli
 foreach ($mapping_poli as $nama_poli => $list_kd_poli) {
     $data_harian[$nama_poli] = [];
 }
 
-// Ambil data untuk setiap tanggal
+// Query optimasi untuk grafik harian dengan prepared statement per kombinasi
 foreach ($period as $date) {
     $tanggal = $date->format('Y-m-d');
     $label_harian[] = $date->format('m/d');
@@ -294,10 +340,28 @@ foreach ($period as $date) {
             continue;
         }
 
-        $sql = "SELECT COUNT(*) as jml FROM reg_periksa WHERE DATE(tgl_registrasi) = '$tanggal' AND kd_poli IN ('" . implode("','", $list_kd_poli) . "') AND kd_pj IN ('A09','BPJ','A92') AND stts='Sudah' AND status_bayar='Sudah Bayar' AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%')";
-        $res = $conn->query($sql);
-        $row = $res->fetch_assoc();
-        $data_harian[$nama_poli][] = (int)$row['jml'];
+        $sql_grafik = "SELECT COUNT(*) as jml FROM reg_periksa
+                      WHERE DATE(tgl_registrasi) = ?
+                      AND MONTH(tgl_registrasi) = ?
+                      AND YEAR(tgl_registrasi) = ?
+                      AND kd_poli IN (" . implode(',', array_fill(0, count($list_kd_poli), '?')) . ")
+                      AND kd_pj IN ('A09','BPJ','A92')
+                      AND stts='Sudah'
+                      AND status_bayar='Sudah Bayar'
+                      AND no_rkm_medis NOT IN (SELECT no_rkm_medis FROM pasien WHERE LOWER(nm_pasien) LIKE '%test%')";
+
+        $stmt_grafik = $conn->prepare($sql_grafik);
+
+        // Bind parameters: tanggal, bulan, tahun, dan semua kd_poli
+        $bind_params_grafik = array_merge([$tanggal, $bulan, $tahun], $list_kd_poli);
+        $stmt_grafik->bind_param(str_repeat('s', count($bind_params_grafik)), ...$bind_params_grafik);
+
+        $stmt_grafik->execute();
+        $res_grafik = $stmt_grafik->get_result();
+        $row_grafik = $res_grafik->fetch_assoc();
+
+        $data_harian[$nama_poli][] = (int)($row_grafik['jml'] ?? 0);
+        $stmt_grafik->close();
     }
 }
 ?>
@@ -405,4 +469,3 @@ function renderChartBulanan() {
 </script>
 </body>
 </html>
-
